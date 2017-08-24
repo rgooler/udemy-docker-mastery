@@ -1,0 +1,11 @@
+version: '2'
+
+services:
+  drupal:
+    image: drupal
+    ports:
+      - '8080:80'
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: shittypassword
