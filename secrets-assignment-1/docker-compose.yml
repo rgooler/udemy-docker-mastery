@@ -3,20 +3,25 @@ version: '2'
 services:
 
   drupal:
-    image: custom-drupal
-    build: .
+    image: drupal:8.2
+    deploy:
+      replicas: 1
     ports:
       - "8080:80"
     volumes:
       - drupal-modules:/var/www/html/modules
-      - drupal-profiles:/var/www/html/profiles       
-      - drupal-sites:/var/www/html/sites      
+      - drupal-profiles:/var/www/html/profiles
+      - drupal-sites:/var/www/html/sites
       - drupal-themes:/var/www/html/themes
- 
+
   postgres:
     image: postgres:9.6
+    deploy:
+      replicas: 1
     environment:
-      - POSTGRES_PASSWORD=mypasswd
+      - POSTGRES_PASSWORD_FILE=/run/secrets/pg_pass
+    secrets:
+      - pg_pass
     volumes:
       - drupal-data:/var/lib/postgresql/data
 
@@ -26,3 +31,7 @@ volumes:
   drupal-profiles:
   drupal-sites:
   drupal-themes:
+
+secrets:
+  pg_pass:
+    external: true
