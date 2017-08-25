@@ -4,8 +4,11 @@
 
 - See architecture.png in this directory for a basic diagram of how the 5 services will work
 - All images are on Docker Hub, so you should use editor to craft your commands locally, then paste them into swarm shell (at least that's how I'd do it)
-- a `backend` and `frontend` overlay network are needed. Nothing different about them other then that backend will help protect datatbase from the voting web app. (similar to how a VLAN setup might be in traditional archecture)
-- The database server should use a named volume for perserving data. Use the new `--mount` format to do this: `--mount type=volume,source=db-data,target=/var/lib/postgresql/data`
+- a `backend` and `frontend` overlay network are needed. Nothing different about them other then that backend will help protect database from the voting web app. (similar to how a VLAN setup might be in traditional architecture)
+- The database server should use a named volume for preserving data. Use the new `--mount` format to do this: `--mount type=volume,source=db-data,target=/var/lib/postgresql/data`
+
+docker network create --driver overlay frontend
+docker network create --driver overlay backend
 
 ### Services (names below should be service names)
 - vote
@@ -15,12 +18,16 @@
     - on frontend network
     - 2+ replicas of this container
 
+docker service create --replicas 2 -p 80:80 --network frontend --name vote dockersamples/examplevotingapp_vote:before
+
 - redis
     - redis:3.2
     - key/value storage for incoming votes
     - no public ports
     - on frontend network
     - 2 replicas
+
+docker service create --replicas 2 --network frontend --name redis redis:3.2
 
 - worker
     - dockersamples/examplevotingapp_worker
@@ -29,11 +36,15 @@
     - on frontend and backend networks
     - 1 replica
 
+docker service create --replicas 1 --network frontend --network backend --name worker dockersamples/examplevotingapp_worker
+
 - db
     - postgres:9.4
     - one named volume needed, pointing to /var/lib/postgresql/data
     - on backend network
     - 1 replica
+
+docker service create --replicas 1 --network backend --mount type=volume,source=db-data,target=/var/lib/postgresql/data --name db postgres:9.4
 
 - result
     - dockersamples/examplevotingapp_result:before
@@ -42,3 +53,5 @@
     - so run on a high port of your choosing (I choose 5001), container listens on 80
     - on backend network
     - 1 replica
+
+docker service create --replicas 1 --network backend -p 5001:80 --name result dockersamples/examplevotingapp_result:before
